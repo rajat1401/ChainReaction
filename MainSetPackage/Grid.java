@@ -1,52 +1,94 @@
 package MainSetPackage;
-
+//as soon as the player keeps getting eliminated skip his turn!
 import java.io.*;
+import java.util.ArrayList;
+
 import javafx.scene.layout.StackPane;
 import javafx.scene.paint.Color;
 import javafx.scene.paint.PhongMaterial;
-import javafx.scene.shape.Line;
-import javafx.scene.shape.Rectangle;
-import javafx.scene.shape.Sphere;
+import javafx.scene.shape.*;
 import javafx.scene.text.Font;
 import javafx.scene.text.Text;
-import javafx.animation.Interpolator;
-import javafx.animation.RotateTransition;
-import javafx.animation.Timeline;
-import javafx.application.Application;
+import javafx.animation.*;
 import javafx.geometry.Pos;
 import javafx.geometry.VPos;
-import javafx.scene.Group;
-import javafx.scene.Parent;
-import javafx.scene.Scene;
+import javafx.scene.*;
 import javafx.scene.control.Button;
-import javafx.scene.image.Image;
-import javafx.scene.image.ImageView;
-import javafx.scene.input.MouseButton;
 import javafx.scene.layout.Pane;
 import javafx.stage.Stage;
 import javafx.util.Duration;
 
-public class Grid extends Application implements Serializable
+public class Grid extends MainPage implements Serializable
 {
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 1L;
 	private Pane root = new Pane();
-	private int[] gridSize={15,10};
+	public int[] gridSize;
 	boolean playable;
-	private Color gridColor;
+	//vary the color of the top line always with the turn
+	public static ArrayList<Player> playerList;
+	public static Cell[][] grid;
+	public Player currentPlayer;
+	public static volatile int playerturn;
 	
-	/*Grid(int[] size)
+	public Grid(int[] gridSize, ArrayList<Player> playerList)
 	{
-		gridSize=size;
+		this.gridSize= gridSize;
+		this.playerList= playerList;
+		this.grid= new Cell[gridSize[0]][gridSize[1]];
+		this.playerturn= 0;
+	}
+	
+	/*public static void  translate(String s, int griddim, int x, int y)
+	{
+		TranslateTransition translateTransition= new TranslateTransition(Duration.millis(200), grid[x][y]);//CHECK
+		if(griddim== 6 || griddim== 9)
+		{
+			if(s.equals("right")){
+				translateTransition.setByX(100);
+				translateTransition.setByY(0);
+			}else if(s.equals("left")){
+				translateTransition.setByX(-100);
+				translateTransition.setByY(0);
+			}else if(s.equals("up")){
+				translateTransition.setByX(0);
+				translateTransition.setByY(-100);
+			}else{
+				translateTransition.setByX(0);
+				translateTransition.setByY(100);
+			}
+		}
+		else
+		{
+			if(s.equals("right")){
+				translateTransition.setByX(60);
+				translateTransition.setByY(0);
+			}else if(s.equals("left")){
+				translateTransition.setByX(-60);
+				translateTransition.setByY(0);
+			}else if(s.equals("up")){
+				translateTransition.setByX(0);
+				translateTransition.setByY(-60);
+			}else{
+				translateTransition.setByX(0);
+				translateTransition.setByY(60);
+			}
+		}
+		translateTransition.play();
 	}*/
-	private Parent createContent() throws FileNotFoundException
+	
+	public Parent createContent(int[] gridSize, ArrayList<Player> playerList) throws FileNotFoundException
 	{
-		root.setPrefSize(40+gridSize[1]*50,95+gridSize[0]*50);
+		root.setPrefSize(700,1000);
 		
 		//Add the blue separator line
 		Line topLine = new Line();
 		topLine.setStroke(Color.BLUE);
 		topLine.setStartX(0); 
 		topLine.setStartY(50); 
-		topLine.setEndX(40+gridSize[1]*50); 
+		topLine.setEndX(800); 
 		topLine.setEndY(50);
 		topLine.setStrokeWidth(4);
 		root.getChildren().add(topLine);
@@ -58,6 +100,28 @@ public class Grid extends Application implements Serializable
 		heading.setFont(Font.font(36));
 		root.getChildren().add(heading);
 		
+		//Add buttons
+		Button newGameBtn = new Button();
+		newGameBtn.setText("New Game");
+		newGameBtn.setLayoutX(460);
+		newGameBtn.setLayoutY(10);
+		newGameBtn.setMinWidth(100);
+		root.getChildren().add(newGameBtn);
+		
+		Button exitBtn = new Button();
+		exitBtn.setText("Exit");
+		exitBtn.setLayoutX(580);
+		exitBtn.setLayoutY(10);
+		exitBtn.setMinWidth(100);
+		root.getChildren().add(exitBtn);
+		
+		Button undoBtn = new Button();
+		undoBtn.setText("Undo");
+		undoBtn.setLayoutX(340);
+		undoBtn.setLayoutY(10);
+		undoBtn.setMinWidth(100);
+		root.getChildren().add(undoBtn);
+		
 		//Add the cells
 		for(int i=0 ; i<gridSize[0] ; i++)
 		{
@@ -66,19 +130,29 @@ public class Grid extends Application implements Serializable
 				Cell box;
 				if((i==0 || i==gridSize[0]-1) && (j==0 || j==gridSize[1]-1))
 				{
-					box = new Cell(2);
+					box = new Cell(2,i,j);
+					grid[i][j]=box;
 				}
 				else if(i==0 || i==gridSize[0]-1 || j==0 || j==gridSize[1]-1)
 				{
-					box = new Cell(3);
+					box = new Cell(3,i,j);
+					grid[i][j]=box;
 				}
 				else
 				{
-					box = new Cell(4);
+					box = new Cell(4,i,j);
+					grid[i][j]=box;
 				}
-				box.setTranslateX(20+(j * 50));
-                box.setTranslateY(75+(i * 50));
-
+				if(gridSize[0]==15 && gridSize[1]==10)
+				{
+					box.setTranslateX(50+(j * 60));
+	                box.setTranslateY(75+(i * 60));
+				}
+				else
+				{
+					box.setTranslateX(50+(j * 100));
+	                box.setTranslateY(75+(i * 100));
+				}
                 root.getChildren().add(box);
 			}
 		}
@@ -88,64 +162,164 @@ public class Grid extends Application implements Serializable
 	public class Cell extends StackPane implements Serializable
 	{
 		int criticalMass;
+		int orbSize;
+		int cellSize;
 		boolean isEmpty;
+		Color color;
 		Group orb;
 		int numOrbs=0;
-		Cell(int criticalMass)
+		int[] coordinate = new int[2];
+		ArrayList<Cell> neighbours;
+		Rectangle box;
+		Cell(int criticalMass,int x,int y)
 		{
 			orb = new Group();
+			coordinate[0]=x;
+			coordinate[1]=y;
 			this.criticalMass=criticalMass;
 			isEmpty=true;
-			
-			Rectangle box = new Rectangle(50,50);
+			neighbours = new ArrayList<Cell>();
+			if(gridSize[0]==15)
+			{
+				cellSize = 60;
+				orbSize = 12;
+			}
+			else
+			{
+				cellSize = 100;
+				orbSize = 20;
+			}
+			box = new Rectangle(cellSize,cellSize);
 			box.setFill(null);
-			box.setStroke(Color.BLACK);
+			box.setStroke(playerList.get(0).getColor());
 			setAlignment(Pos.CENTER);
 			getChildren().add(box);
 			
 			setOnMouseClicked(event -> 
 			{
-				if(numOrbs<this.criticalMass-1)
+				currentPlayer= playerList.get(playerturn);
+				if(this.color== currentPlayer.getColor() || this.color== null)
 				{
-					addOrb();
+					this.color= currentPlayer.getColor();//okay
+					currentPlayer.takeTurn(this);
 				}	
-				else
-					return;
             });
 			getChildren().add(orb);
 		}
-		private void addOrb()
+		
+		public ArrayList<Cell> getNeighbour()//okay
+		{
+			ArrayList<Cell> list= new ArrayList<Cell>();
+			if((this.coordinate[1]==0))
+			{
+				list.add(grid[this.coordinate[0]][this.coordinate[1]+1]);
+				if(this.coordinate[0]==0)
+				{
+					list.add(grid[this.coordinate[0]+1][this.coordinate[1]]);
+				}
+				else if(this.coordinate[0]== gridSize[0]-1)
+				{
+					list.add(grid[this.coordinate[0]-1][this.coordinate[1]]);
+				}
+				else
+				{
+					list.add(grid[this.coordinate[0]+1][this.coordinate[1]]);
+					list.add(grid[this.coordinate[0]-1][this.coordinate[1]]);
+				}
+			}
+			else if((this.coordinate[1]==gridSize[1]-1))
+			{
+				list.add(grid[this.coordinate[0]][this.coordinate[1]-1]);
+				if(this.coordinate[0]==0)
+				{
+					list.add(grid[this.coordinate[0]+1][this.coordinate[1]]);
+				}
+				else if(this.coordinate[0]== gridSize[0]-1)
+				{
+					list.add(grid[this.coordinate[0]-1][this.coordinate[1]]);
+				}
+				else
+				{
+					list.add(grid[this.coordinate[0]+1][this.coordinate[1]]);
+					list.add(grid[this.coordinate[0]-1][this.coordinate[1]]);
+				}
+			}
+			else if(this.coordinate[0]== 0)
+			{
+				list.add(grid[this.coordinate[0]+1][this.coordinate[1]]);
+				if(this.coordinate[1]==0)
+				{
+					list.add(grid[this.coordinate[0]][this.coordinate[1]+1]);
+				}
+				else if(this.coordinate[1]==gridSize[1]-1)
+				{
+					list.add(grid[this.coordinate[0]][this.coordinate[1]-1]);
+				}
+				else
+				{
+					list.add(grid[this.coordinate[0]][this.coordinate[1]+1]);
+					list.add(grid[this.coordinate[0]][this.coordinate[1]-1]);
+				}
+			}
+			else if(this.coordinate[0]== gridSize[0]-1)
+			{
+				list.add(grid[this.coordinate[0]-1][this.coordinate[1]]);
+				if(this.coordinate[1]==0)
+				{
+					list.add(grid[this.coordinate[0]][this.coordinate[1]+1]);
+				}
+				else if(this.coordinate[1]== gridSize[1]-1)
+				{
+					list.add(grid[this.coordinate[0]][this.coordinate[1]-1]);
+				}
+				else
+				{
+					list.add(grid[this.coordinate[0]][this.coordinate[1]+1]);
+					list.add(grid[this.coordinate[0]][this.coordinate[1]-1]);
+				}
+			}
+			else//means it lies somewhere in between
+			{
+				list.add(grid[this.coordinate[0]][this.coordinate[1]+1]);
+				list.add(grid[this.coordinate[0]+1][this.coordinate[1]]);
+				list.add(grid[this.coordinate[0]-1][this.coordinate[1]]);
+				list.add(grid[this.coordinate[0]][this.coordinate[1]-1]);
+			}
+			return list;
+		}
+		
+		public void addOrb()
 		{
 			orb.getChildren().clear();
 			if(numOrbs==0)
 			{
-				Sphere sphere = new Sphere(10);
-				sphere.setMaterial(new PhongMaterial(Color.RED));
+				Sphere sphere = new Sphere(orbSize);
+				sphere.setMaterial(new PhongMaterial(this.color));
 				orb.getChildren().add(sphere);
 			}
 			else if(numOrbs==1)
 			{
-				Sphere sphere_1 = new Sphere(10);
-				sphere_1.setMaterial(new PhongMaterial(Color.RED));
-				sphere_1.setTranslateX(32.5);
-				Sphere sphere_2 = new Sphere(10);
-				sphere_2.setMaterial(new PhongMaterial(Color.RED));
-				sphere_2.setTranslateX(17.5);
+				Sphere sphere_1 = new Sphere(orbSize);
+				sphere_1.setMaterial(new PhongMaterial(this.color));
+				sphere_1.setTranslateX((cellSize - (3.5)*(orbSize))/2 + orbSize);
+				Sphere sphere_2 = new Sphere(orbSize);
+				sphere_2.setMaterial(new PhongMaterial(this.color));
+				sphere_2.setTranslateX((cellSize - (3.5)*(orbSize))/2 + (2.5)*orbSize);
 				orb.getChildren().addAll(sphere_1,sphere_2);
 					
 			}
 			else if(numOrbs==2)
 			{
-				Sphere sphere_3 = new Sphere(10);
-				sphere_3.setMaterial(new PhongMaterial(Color.RED));
-				sphere_3.setTranslateX(32.5);
-				Sphere sphere_4 = new Sphere(10);
-				sphere_4.setMaterial(new PhongMaterial(Color.RED));
-				sphere_4.setTranslateX(17.5);
-				Sphere sphere_5 = new Sphere(10);
-				sphere_5.setMaterial(new PhongMaterial(Color.RED));
-				sphere_5.setTranslateX(25);
-				sphere_5.setTranslateY(12.5);
+				Sphere sphere_3 = new Sphere(orbSize);
+				sphere_3.setMaterial(new PhongMaterial(this.color));
+				sphere_3.setTranslateX((cellSize - (3.5)*(orbSize))/2 + (2.5)*orbSize);
+				Sphere sphere_4 = new Sphere(orbSize);
+				sphere_4.setMaterial(new PhongMaterial(this.color));
+				sphere_4.setTranslateX((cellSize - (3.5)*(orbSize))/2 + orbSize);
+				Sphere sphere_5 = new Sphere(orbSize);
+				sphere_5.setMaterial(new PhongMaterial(this.color));
+				sphere_5.setTranslateX((cellSize - (3.5)*(orbSize))/2 + (1.75)*orbSize);
+				sphere_5.setTranslateY(cellSize/4);
 				orb.getChildren().addAll(sphere_3,sphere_4,sphere_5);
 			}
 			numOrbs++;
@@ -164,17 +338,11 @@ public class Grid extends Application implements Serializable
 		}
 	}
 	
-	
-	@Override
-	public void start(Stage primaryStage) throws Exception 
+	public static void main(int[] gridSize, ArrayList<Player> playerList) throws FileNotFoundException
 	{
-        primaryStage.setScene(new Scene(createContent()));
+		Stage primaryStage= new Stage();
+		Grid mainGrid= new Grid(gridSize, playerList);
+		primaryStage.setScene(new Scene(mainGrid.createContent(gridSize, playerList)));
         primaryStage.show();
-    }
-	
-	
-	public static void main(String[] args)
-	{
-		launch(args);
 	}
 }
