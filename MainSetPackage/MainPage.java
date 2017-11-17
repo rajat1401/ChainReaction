@@ -74,11 +74,21 @@ public class MainPage extends Application{
             public void handle(ActionEvent event) {
             	listPlayers= new ArrayList<Player>();//ISSUE RESOLVED!
             	String choice= cb.getSelectionModel().getSelectedItem().toString();
-        		numPlayers= Integer.parseInt(choice);
+            	if(choice== null){
+            		numPlayers= 2;
+            	}else{
+            		numPlayers= Integer.parseInt(choice);
+            	}
         		String choice2= cb2.getSelectionModel().getSelectedItem().toString();
+        		int xflag= -1;
         		if(!choice2.equals("")){//means no grid size selected(provide a default grid-size)!
-        			gridSize[0]= Integer.parseInt(Character.toString(choice2.charAt(0)));
-        			gridSize[1]= Integer.parseInt(Character.toString(choice2.charAt(2)));
+        			for(int i=0; i<choice2.length(); i++){
+        				if(choice2.charAt(i)== 'X'){
+        					xflag= i;
+        				}
+        			}
+        			gridSize[0]= Integer.parseInt(choice2.substring(0, xflag));
+        			gridSize[1]= Integer.parseInt(choice2.substring(xflag+1, choice2.length()));
         		}else{//default grid size when not selected
         			gridSize[0]= 9;
         			gridSize[1]= 6;
@@ -144,5 +154,4 @@ public class MainPage extends Application{
         mainstage.setScene(scene);
         mainstage.show();
 	}
-
 }

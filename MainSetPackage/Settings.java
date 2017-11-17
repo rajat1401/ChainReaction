@@ -21,7 +21,7 @@ class BadColorSelectionException extends Exception{
 
 public class Settings extends MainPage{
 
-	public static void main(String[] args) throws Exception, BadColorSelectionException{
+	public static void main(String[] args) throws Exception{
 		Stage mainstage= new Stage();
 		// TODO Auto-generated method stub
 		mainstage.setTitle("Setting Page");
