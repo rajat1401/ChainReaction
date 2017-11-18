@@ -1,5 +1,11 @@
-package MainSetPackage;
+/**
+ * This class is the class for the Main Page
+ * 
+ * @author Rajat, Anmol
+ */
 
+package MainSetPackage;
+//DEFAULT SETTINGS ARE ADDED UNDER SETOnACTION LISTENER OF PLAYGAME AND FLAGS.
 import java.io.FileNotFoundException;
 import java.util.*;
 import javafx.application.*;
@@ -16,7 +22,10 @@ import javafx.collections.FXCollections;
 import MainSetPackage.Settings;
 
 class PlayersNotSelectedException extends Exception{
-
+	/**
+	 * 
+	 * @param message To be displayed when this exception gets thrown
+	 */
 	public PlayersNotSelectedException(String message){
 		super(message);
 	}
@@ -28,13 +37,22 @@ public class MainPage extends Application{
 	public static int[] gridSize= new int[2];
 	public static Color[] colorList= new Color[]{Color.RED, Color.GREEN, Color.BLUE, Color.YELLOW, Color.MAGENTA, Color.CYAN, Color.ORANGE, Color.WHITE};
 	public static ArrayList<Player> listPlayers= new ArrayList<Player>();
-
-	public static void main(String[] args) throws Exception, BadColorSelectionException{
+	
+	/**
+	 * 
+	 * @param args inputs
+	 * @throws Exception General type exception catching
+	 * @throws NullPointerException Null Pointer Exception catching 
+	 */
+	public static void main(String[] args) throws Exception, NullPointerException{
 		launch(args);
 	}
-
+	
+	/**
+	 * Abstract method executed by the Application thread(takes input via GUI from user)
+	 */
 	@Override
-	public void start(Stage mainstage) throws Exception, BadColorSelectionException{
+	public void start(Stage mainstage) throws Exception, NullPointerException{
 		mainstage.setTitle("Main Page");
 
 		ChoiceBox<String> cb= new ChoiceBox<String>();
@@ -50,11 +68,29 @@ public class MainPage extends Application{
 		btn3.setOnAction(new EventHandler<ActionEvent>(){
 			@Override
 			public void handle(ActionEvent arg0) {
-				numPlayers= Integer.parseInt(cb.getSelectionModel().getSelectedItem());
-				gridSize[0]= Character.getNumericValue(cb2.getSelectionModel().getSelectedItem().charAt(0));
-				gridSize[1]= Character.getNumericValue(cb2.getSelectionModel().getSelectedItem().charAt(2));
+				String choice= cb.getSelectionModel().getSelectedItem();
+				if(choice!= null){
+					numPlayers= Integer.parseInt(choice);
+				}else{
+					numPlayers= 2;
+				}
+				
+				String choice2= cb2.getSelectionModel().getSelectedItem();
+				if(choice2!= null){
+					int xxflag= -1;
+					for(int i=0; i<choice2.length(); i++){
+        				if(choice2.charAt(i)== 'X'){
+        					xxflag= i;
+        				}
+        			}
+					gridSize[0]= Integer.parseInt(choice2.substring(0, xxflag));
+					gridSize[1]= Integer.parseInt(choice2.substring(xxflag+1, cb2.getSelectionModel().getSelectedItem().toString().length()));
+				}else{
+					gridSize[0]= 9;
+					gridSize[1]= 6;
+				}
 				// TODO Auto-generated method stub
-				String[] args= new String[]{"1", "2"};//NO USE.
+				String[]args= {"1", "2"};
 				try {
 					Settings.main(args);
 				} catch (BadColorSelectionException e) {
@@ -72,16 +108,16 @@ public class MainPage extends Application{
         btn.setOnAction(new EventHandler<ActionEvent>() {
             @Override
             public void handle(ActionEvent event) {
-            	listPlayers= new ArrayList<Player>();//ISSUE RESOLVED!
-            	String choice= cb.getSelectionModel().getSelectedItem().toString();
-            	if(choice== null){
-            		numPlayers= 2;
-            	}else{
+            	listPlayers= new ArrayList<Player>();
+            	String choice= cb.getSelectionModel().getSelectedItem();
+            	if(choice!= null){
             		numPlayers= Integer.parseInt(choice);
+            	}else{
+            		numPlayers= 2;
             	}
-        		String choice2= cb2.getSelectionModel().getSelectedItem().toString();
+        		String choice2= cb2.getSelectionModel().getSelectedItem();
         		int xflag= -1;
-        		if(!choice2.equals("")){//means no grid size selected(provide a default grid-size)!
+        		if(choice2!= null){//means no grid size selected(provide a default grid-size)!
         			for(int i=0; i<choice2.length(); i++){
         				if(choice2.charAt(i)== 'X'){
         					xflag= i;
@@ -89,6 +125,7 @@ public class MainPage extends Application{
         			}
         			gridSize[0]= Integer.parseInt(choice2.substring(0, xflag));
         			gridSize[1]= Integer.parseInt(choice2.substring(xflag+1, choice2.length()));
+        			
         		}else{//default grid size when not selected
         			gridSize[0]= 9;
         			gridSize[1]= 6;

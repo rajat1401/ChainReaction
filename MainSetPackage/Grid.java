@@ -2,8 +2,6 @@ package MainSetPackage;
 
 import java.io.*;
 import java.util.ArrayList;
-import java.util.concurrent.TimeUnit;
-
 import javafx.scene.layout.*;
 import javafx.scene.paint.*;
 import javafx.scene.shape.*;
@@ -14,8 +12,13 @@ import javafx.geometry.*;
 import javafx.scene.*;
 import javafx.scene.control.*;
 import javafx.stage.Stage;
+import javafx.stage.WindowEvent;
 import javafx.util.Duration;
 
+/**
+ * This class is the main class to simulate the Grid and basic animations for all the Players and checkWinner simultaneously
+ * @author Anmol, Rajat
+ */
 public class Grid extends MainPage implements Serializable
 {
 	private static final long serialVersionUID = 1L;
@@ -26,15 +29,31 @@ public class Grid extends MainPage implements Serializable
 	public static ArrayList<Player> playerList;
 	public static Cell[][] grid;
 	public Player currentPlayer;
-	public static int playerturn= 0;
+	private static int count;
+	public static int playerturn;
 	
+	/**
+	 * 
+	 * @param gridSize Size of the Grid to be made
+	 * @param playerList Contains the list of Players and their attributes to be created
+	 */
 	public Grid(int[] gridSize, ArrayList<Player> playerList)
 	{
 		this.gridSize= gridSize;
-		Grid.playerList= playerList;
+		Grid.playerList= new ArrayList<Player>(playerList);
 		Grid.grid= new Cell[gridSize[0]][gridSize[1]];
+		currentPlayer=null;
+		playerturn= 0;
+		count=0;
 	}
 	
+	/**
+	 * 
+	 * @param gridSize Defines the gridSize
+	 * @param playerList List of all the Players that start the game
+	 * @return returns the Grid itself
+	 * @throws FileNotFoundException
+	 */
 	public Parent createContent(int[] gridSize, ArrayList<Player> playerList) throws FileNotFoundException
 	{
 		root.setPrefSize(700,1000);
@@ -63,7 +82,9 @@ public class Grid extends MainPage implements Serializable
 		newGameBtn.setLayoutY(10);
 		newGameBtn.setMinWidth(100);
 		newGameBtn.setOnAction(new EventHandler<ActionEvent>(){
-
+			/**
+			 * starts a newGame on pressing button with same number of players and gridSize
+			 */
 			@Override
 			public void handle(ActionEvent arg0) 
 			{
@@ -86,7 +107,9 @@ public class Grid extends MainPage implements Serializable
 		exitBtn.setLayoutY(10);
 		exitBtn.setMinWidth(100);
 		exitBtn.setOnAction(new EventHandler<ActionEvent>(){
-
+			/**
+			 * exits on pressing the button
+			 */
 			@Override
 			public void handle(ActionEvent event) 
 			{
@@ -190,12 +213,32 @@ public class Grid extends MainPage implements Serializable
 				if(this.color== currentPlayer.getColor() || this.color== null)
 				{
 					this.color= currentPlayer.getColor();//okay
+					if(Grid.playerturn >= Grid.playerList.size()-1)
+					{
+						Grid.playerturn= 0;
+						if(Grid.playerList.get(0).flag!=1)
+						{
+							for(int i=0; i<Grid.playerList.size(); i++)
+							{
+								Grid.playerList.get(i).flag= 1;//means one round has been completed! okay
+							}
+						}
+						
+					}
+					else
+					{
+						Grid.playerturn++;
+					}
 					currentPlayer.takeTurn(this);
 				}	
             });
 			getChildren().add(orb);
 		}
 		
+		/**
+		 * 
+		 * @return list of neighbouring cells of the given cell
+		 */
 		public ArrayList<Cell> getNeighbour()//okay
 		{
 			ArrayList<Cell> list= new ArrayList<Cell>();
@@ -277,6 +320,12 @@ public class Grid extends MainPage implements Serializable
 			return list;
 		}
 		
+		/**
+		 * 
+		 * @param cur The current player 
+		 * @param neighbours List of neighbouring cells of the cell in which player moves
+		 * @param color Color of the player/cell
+		 */
 		public void translate(Player cur,ArrayList<Cell> neighbours,Color color)
 		{
 			ParallelTransition mainTransition = new ParallelTransition();
@@ -314,12 +363,17 @@ public class Grid extends MainPage implements Serializable
 				}
 				if(endOfAnimation)
 				{
-					removeDeadPlayers(cur);
+					doAtEndOfAnimation(cur);
+					
 				}
 				
 			});
 			
 		}
+		
+		/**
+		 * addOrbs to the cell on which it is called.
+		 */
 		public void addOrb()
 		{
 			orb.getChildren().clear();
@@ -369,6 +423,12 @@ public class Grid extends MainPage implements Serializable
 			rotater.play();	
 		}
 	}
+	
+	/**
+	 * 
+	 * @param cell cell whose color is checked
+	 * @return Index of the player whose color matches that of the cell
+	 */
 	public static int checkColor(Cell cell){
 		int result= 0;
 		for(int i=0; i<Grid.playerList.size(); i++)
@@ -381,7 +441,12 @@ public class Grid extends MainPage implements Serializable
 		}
 		return result;
 	}
-	public static void removeDeadPlayers(Player cur)
+	
+	/**
+	 * 
+	 * @param cur removes dead players at end of turn and increments playerTurn variable 
+	 */
+	public static void doAtEndOfAnimation(Player cur)
 	{
 		int[] freqarray= new int[Grid.playerList.size()];
 		for(int i=0; i<Grid.grid.length; i++)
@@ -394,6 +459,7 @@ public class Grid extends MainPage implements Serializable
 				}
 			}
 		}
+		//Removes dead players
 		for(int i=Grid.playerList.size()-1; i>=0; i--)
 		{
 			if(freqarray[i]== 0)
@@ -401,42 +467,112 @@ public class Grid extends MainPage implements Serializable
 				Grid.playerList.remove(i);
 			}
 		}
-		if(playerList.size()==1)
+		
+		if(playerturn>=Grid.playerList.size())
 		{
+			playerturn=0;
+		}
+		//Checks for winner
+		if(playerList.size()==1 && count==0)
+		{
+			count++;
 			endGame(cur);
 		}
+		
 	}
+	
+	/**
+	 * 
+	 * @param cur declares the current player as the winner and displays option for newGame or Exit
+	 */
 	public static void endGame(Player cur)
 	{	
-		Stage winstage= new Stage();
-		winstage.setTitle("Game Over");
-		VBox vbox= new VBox();
-		HBox hbox= new HBox();
-		Label label= new Label(cur.playerName + " has won the Game!!!");
-		label.setFont(Font.font(28));
-		label.setAlignment(Pos.CENTER);
-		label.setWrapText(true);
-        hbox.setPadding(new Insets(20, 20, 20, 20));
-		label.setTextFill(cur.getColor());
-		label.setStyle("-fx-font-weight: bold");
-		hbox.getChildren().add(label);
-		vbox.getChildren().add(hbox);
-		Scene scene= new Scene(vbox, 300, 250);
-		vbox.setStyle("-fx-background-color: #D3D3D3");
-		winstage.setScene(scene);
-		winstage.show();
-		try 
-		{
-			TimeUnit.SECONDS.sleep(2);
-		} 
-		catch (InterruptedException e) 
-		{
+		Stage winStage= new Stage();
+		winStage.setTitle("Game Over");
+		Pane endGamePane = new Pane();
+		endGamePane.setPrefSize(300,300);
+		endGamePane.setStyle("-fx-background-color: #D3D3D3");
+		Label endMessage = new Label(cur.playerName + " has won the Game!!!");
+		endMessage.setFont(Font.font("Roboto",20));
+		endMessage.setTranslateX(20);
+		endMessage.setTranslateY(100);
+		endMessage.setTextAlignment(TextAlignment.CENTER);
+		endMessage.setAlignment(Pos.CENTER);
+		endMessage.setTextFill(cur.getColor());
+		endMessage.setWrapText(true);
+		endGamePane.getChildren().add(endMessage);
+		
+		//Add buttons
+		Button newGameBtn = new Button();
+		newGameBtn.setText("New Game");
+		newGameBtn.setLayoutX(50);
+		newGameBtn.setLayoutY(200);
+		newGameBtn.setMinWidth(75);
+		
+		/**
+		 * On pressing the button, create a new Game with same colors and numPlayers
+		 */
+		newGameBtn.setOnAction(new EventHandler<ActionEvent>(){
+
+			@Override
+			public void handle(ActionEvent arg0) 
+			{
+				winStage.close();
+				gridStage.close();
+				try 
+				{
+					Grid.main(MainPage.gridSize, MainPage.listPlayers);
+				}
+				catch (FileNotFoundException e) 
+				{
+					e.printStackTrace();
+				}
+			}
+		});
+		endGamePane.getChildren().add(newGameBtn);
+				
+		Button exitBtn = new Button();
+		exitBtn.setText("Exit");
+		exitBtn.setLayoutX(175);
+		exitBtn.setLayoutY(200);
+		exitBtn.setMinWidth(75);
+		exitBtn.setOnAction(new EventHandler<ActionEvent>(){
 			
-			e.printStackTrace();
-		}
+			/**
+			 * Exit the Game on pressing this button
+			 */
+			@Override
+			public void handle(ActionEvent event) 
+			{
+				winStage.close();
+				gridStage.close();
+			}
+		});
+		endGamePane.getChildren().add(exitBtn);
+		winStage.setOnCloseRequest(new EventHandler<WindowEvent>() {
+			/**
+			 * Don't be able to close the window
+			 */
+		    @Override
+		    public void handle(WindowEvent event) 
+		    {
+
+		        // consume event
+		        event.consume();
+		    }
+		});
 		
-		
+		Scene scene = new Scene(endGamePane);
+		winStage.setScene(scene);
+		winStage.show();
 	}
+	
+	/**
+	 * 
+	 * @param gridSize Size of the grid
+	 * @param playerList list of players, this method calls the constructor and starts the Game
+	 * @throws FileNotFoundException
+	 */
 	public static void main(int[] gridSize, ArrayList<Player> playerList) throws FileNotFoundException
 	{
 		gridStage= new Stage();
